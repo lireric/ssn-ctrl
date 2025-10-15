@@ -18,3 +18,7 @@ Module is written in Rust and replaces previous version on Lua, Python and C.
 ### Example:
 	ssn-ctrl -l INFO
 	ssn-ctrl -l WARN -c ssn_conf2.yaml -d
+
+### Build
+    cargo build --release
+    cargo run -- -c ssn_conf.yaml
