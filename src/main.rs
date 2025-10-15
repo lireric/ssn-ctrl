@@ -6,17 +6,43 @@ use std::sync::Arc;
 use log::LevelFilter;
 use tokio::sync::mpsc;
 use rumqttc::{Event, Packet};
+use clap::Parser;
 mod config;
 mod database;
 mod mqtt_client;
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Configuration file path
+    #[clap(short = 'c', long = "config", default_value = "ssn_conf.yaml")]
+    config: String,
+
+    /// Log level (debug, info, warn, error)
+    #[clap(short = 'l', long = "log-level", default_value = "info")]
+    log_level: String,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
+    // Set log level from command line argument
+    let log_level = match args.log_level.to_lowercase().as_str() {
+        "debug" => LevelFilter::Debug,
+        "info" => LevelFilter::Info,
+        "warn" => LevelFilter::Warn,
+        "error" => LevelFilter::Error,
+        _ => LevelFilter::Info,
+    };
+
     env_logger::Builder::from_default_env()
-        .filter_level(LevelFilter::Info)
+        .filter_level(log_level)
         .init();
 
-    let config = crate::config::load_config("ssn_conf.yaml")?;
+    log::info!("Using config file: {}", args.config);
+    let config = crate::config::load_config(&args.config)?;
+
     log::info!("Starting SSN IoT System: {}", config.app.name);
     log::info!("Account: {}", config.ssn.account);
 

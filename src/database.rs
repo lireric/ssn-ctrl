@@ -113,7 +113,7 @@ impl DatabaseClient {
             td_action: action_id,
         }];
 
-        let url = format!("{}ssn_teledata", self.base_url);
+        let url = format!("{}/ssn_teledata", self.base_url);
         log::info!("set device value. url={} data={:?}", url, data);
         self.client
             .post(&url)
