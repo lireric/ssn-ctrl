@@ -1,0 +1,20 @@
+[package]
+name = "ssn-ctrl"
+version = "0.1.0"
+authors = ["Ernold <lireric@gmail.com>"]
+edition = "2021"
+resolver = "2"
+rust-version = "1.77"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+rumqttc = "0.24"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+reqwest = { version = "0.12", features = ["json"] }
+log = "0.4"
+env_logger = "0.11"
+anyhow = "1"
+chrono = "0.4"
+async-trait = "0.1"
