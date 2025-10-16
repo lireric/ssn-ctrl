@@ -4,10 +4,16 @@
 use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, Packet, QoS};
 use tokio::sync::mpsc;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub struct SsnMqttClient {
     client: AsyncClient,
     account: u32,
+    host: String,
+    port: u16,
+    client_id: String,
+    username: String,
+    password: String,
 }
 
 impl SsnMqttClient {
@@ -21,11 +27,33 @@ impl SsnMqttClient {
     ) -> anyhow::Result<(Self, EventLoop)> {
         let mut mqtt_opts = MqttOptions::new(client_id, host, port);
         mqtt_opts.set_credentials(username, password);
-        mqtt_opts.set_keep_alive(std::time::Duration::from_secs(60));
+        mqtt_opts.set_keep_alive(Duration::from_secs(60));
+        // mqtt_opts.set_connection_timeout(10);
 
         let (client, eventloop) = AsyncClient::new(mqtt_opts, 10);
 
-        Ok((Self { client, account }, eventloop))
+        Ok((
+            Self {
+                client,
+                account,
+                host: host.to_string(),
+                port,
+                client_id: client_id.to_string(),
+                username: username.to_string(),
+                password: password.to_string(),
+            },
+            eventloop,
+        ))
+    }
+
+    pub fn recreate_eventloop(&self) -> EventLoop {
+        let mut mqtt_opts = MqttOptions::new(&self.client_id, &self.host, self.port);
+        mqtt_opts.set_credentials(&self.username, &self.password);
+        mqtt_opts.set_keep_alive(Duration::from_secs(60));
+        // mqtt_opts.set_connection_timeout(10);
+
+        let (client, eventloop) = AsyncClient::new(mqtt_opts, 10);
+        eventloop
     }
 
     pub async fn subscribe_topics(&self) -> anyhow::Result<()> {
