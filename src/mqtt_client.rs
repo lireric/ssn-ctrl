@@ -47,6 +47,7 @@ impl SsnMqttClient {
     }
 
     pub fn recreate_eventloop(&self) -> EventLoop {
+        log::info!("recreate_eventloop at broker: {}", &self.host);
         let mut mqtt_opts = MqttOptions::new(&self.client_id, &self.host, self.port);
         mqtt_opts.set_credentials(&self.username, &self.password);
         mqtt_opts.set_keep_alive(Duration::from_secs(60));

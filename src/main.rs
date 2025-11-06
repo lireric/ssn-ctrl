@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
             Ok(Event::Incoming(Packet::Publish(p))) => {
                 let topic = &p.topic;
                 let payload = String::from_utf8_lossy(&p.payload);
-                
+
                 log::debug!("Received: {} -> {}", topic, payload);
 
                 // Parse topic and handle message
@@ -86,7 +86,7 @@ async fn main() -> anyhow::Result<()> {
                     if account == config.ssn.account {
                         if let Ok(value) = payload.parse::<f64>() {
                             let ts = chrono::Utc::now().timestamp();
-                            
+
                             // Store to database
                             if let Some(ref db) = db_client {
                                 if let Err(e) = db.set_device_value(
@@ -99,14 +99,60 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
             }
+            Ok(Event::Incoming(Packet::Disconnect)) => {
+                log::warn!("MQTT connection disconnected, attempting to reconnect...");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                continue;
+            }
+            Ok(Event::Outgoing(rumqttc::Outgoing::Disconnect)) => {
+                log::warn!("MQTT client disconnecting, attempting to reconnect...");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                continue;
+            }
             Ok(_) => {}
             Err(e) => {
-                log::error!("MQTT error: {}", e);
-                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                log::error!("MQTT error: {}, attempting to reconnect...", e);
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                mqtt_client.recreate_eventloop();
+                mqtt_client.subscribe_topics().await?;
+                continue;
             }
         }
     }
-}
+        // match eventloop.poll().await {
+        //     Ok(Event::Incoming(Packet::Publish(p))) => {
+        //         let topic = &p.topic;
+        //         let payload = String::from_utf8_lossy(&p.payload);
+                
+        //         log::debug!("Received: {} -> {}", topic, payload);
+
+        //         // Parse topic and handle message
+        //         if let Some((account, obj, device, channel)) = parse_topic(&topic) {
+        //             log::info!("handle message from topic {}", topic);
+        //             if account == config.ssn.account {
+        //                 if let Ok(value) = payload.parse::<f64>() {
+        //                     let ts = chrono::Utc::now().timestamp();
+                            
+        //                     // Store to database
+        //                     if let Some(ref db) = db_client {
+        //                         if let Err(e) = db.set_device_value(
+        //                             account, obj, &device, channel, value, 0, Some(ts)
+        //                         ).await {
+        //                             log::error!("Database error: {}", e);
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     Ok(_) => {}
+        //     Err(e) => {
+        //         log::error!("MQTT error: {}", e);
+        //         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        //     }
+        // }
+    // Ok(())
+    }
 
 fn parse_topic(topic: &str) -> Option<(u32, u32, String, u32)> {
     let parts: Vec<&str> = topic.split('/').collect();
